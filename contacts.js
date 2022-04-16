@@ -1,12 +1,12 @@
 const fs = require("fs").promises;
 const path = require("path");
 
-const contactsPath = path.resolve("./db/contacts.json");
+const contactsPath = path.join(__dirname, "/db/contacts.json");
 
 async function listContacts() {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    console.table(JSON.parse(data));
+    const data = await fs.readFile(contactsPath);
+    return JSON.parse(data);
   } catch (error) {
     console.error(error);
   }
@@ -14,8 +14,10 @@ async function listContacts() {
 
 async function getContactById(contactId) {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    console.table(JSON.parse(data).find((contact) => contact.id === contactId));
+    const data = await listContacts();
+    const contact = data.find((contact) => contact.id === contactId);
+    if(!contact){return null}
+    return contact;
   } catch (error) {
     console.error(error);
   }
@@ -23,13 +25,11 @@ async function getContactById(contactId) {
 
 async function removeContact(contactId) {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    const newData = JSON.parse(data).filter(
-      (contact) => contact.id !== contactId
-    );
-    await fs.writeFile(contactsPath, JSON.stringify(newData), "utf8");
-    const addedData = await fs.readFile(contactsPath, "utf8");
-    console.table(JSON.parse(addedData));
+    const data = await listContacts();
+    const newData = data.filter((contact) => contact.id !== contactId);
+    await fs.writeFile(contactsPath, JSON.stringify(newData));
+    const changedList = await listContacts();
+    return changedList;
   } catch (error) {
     console.error(error);
   }
@@ -37,18 +37,17 @@ async function removeContact(contactId) {
 
 async function addContact(name, email, phone) {
   try {
-    const data = await fs.readFile(contactsPath, "utf8");
-    const parsData = JSON.parse(data);
-    const newId = `${parsData.length + 1}`;
-    parsData.push({
+    const data = await listContacts();
+    const newId = `${data.length + 1}`;
+    data.push({
       id: newId,
       name: name,
       email: email,
       phone: phone,
     });
-    await fs.writeFile(contactsPath, JSON.stringify(parsData), "utf8");
-    const newData = await fs.readFile(contactsPath, "utf8");
-    console.table(JSON.parse(newData));
+    await fs.writeFile(contactsPath, JSON.stringify(data));
+    const newData = await listContacts();
+    return newData;
   } catch (error) {
     console.error(error);
   }
